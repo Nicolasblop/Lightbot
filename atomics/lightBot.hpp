@@ -69,6 +69,9 @@ enum DriveState {right = 0, straight = 1, left = 2, stop = 3};
             struct state_type{
               DriveState dir;
               bool prop;
+              float lightRight = 0;
+              float lightLeft = 0;
+              bool centerIR = false;
             }; 
             state_type state;
 
@@ -86,28 +89,24 @@ enum DriveState {right = 0, straight = 1, left = 2, stop = 3};
 
             // external transition
             void external_transition(TIME e, typename make_message_bags<input_ports>::type mbs) { 
-              float lightRight = 0;
-              float lightLeft = 0;
-              bool centerIR = false;
-
               for(const auto &x : get_messages<typename defs::centerIR>(mbs)){
                 state.centerIR = !x;
               }
               
               for(const auto &x : get_messages<typename defs::rightLightSens>(mbs)){
-                lightRight = x;
+                state.lightRight = x;
               }
 
               for(const auto &x : get_messages<typename defs::leftLightSens>(mbs)){
-                lightLeft = x;
+                state.lightLeft = x;
               }              
 
               if(state.centerIR) {
                 //if centerIR doesn't see the ground, bot stops
                 state.dir = DriveState::stop;
-              } else if ((lightLeft-lightRight)<>0.1) { //10% difference between left and right sensor
+              } else if ((state.lightLeft-state.lightRight)>0.1) { //10% difference between left and right sensor
                 state.dir = DriveState::right;
-              } else if ((lightRight-lightLeft)>0.1) {
+              } else if ((state.lightRight-state.lightLeft)>0.1) {
                 state.dir = DriveState::left;
               } else {
                 state.dir = DriveState::straight;
@@ -131,24 +130,24 @@ enum DriveState {right = 0, straight = 1, left = 2, stop = 3};
 
               switch(state.dir){
                 case DriveState::right:
-                  rightMotorOut1 = 0;
-                  rightMotorOut2 = 0.5;
-                  leftMotorOut1 = 0;
+                  rightMotorOut1 = 0.5;
+                  rightMotorOut2 = 0;
+                  leftMotorOut1 = 1;
                   leftMotorOut2 = 1;                
                 break;
 
                 case DriveState::left:
-                  rightMotorOut1 = 0;
+                  rightMotorOut1 = 1;
                   rightMotorOut2 = 1;
-                  leftMotorOut1 = 0;
-                  leftMotorOut2 = 0.5;
+                  leftMotorOut1 = 0.5;
+                  leftMotorOut2 = 0;
                 break;
 
                 case DriveState::straight:
-                  rightMotorOut1 = 0;
-                  rightMotorOut2 = 1;
-                  leftMotorOut1 = 0;
-                  leftMotorOut2 = 1;
+                  rightMotorOut1 = 0.5;
+                  rightMotorOut2 = 0;
+                  leftMotorOut1 = 0.5;
+                  leftMotorOut2 = 0;
                 break;
 
                 case DriveState::stop:
